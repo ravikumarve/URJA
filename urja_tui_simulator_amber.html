@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URJA - Amber TUI Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Classic Amber Monochrome */
+            --bg-term: #0a0500;
+            --amber-main: #ffb703;
+            --amber-dim: #8a6300;
+            --amber-alert: #ff5e00;
+            
+            --font-term: 'JetBrains Mono', monospace;
+            
+            /* Neon Glow Variables - Tightened for crisp readability */
+            --glow-main: 0 0 2px rgba(255, 183, 3, 0.4);
+            --glow-dim: 0 0 1px rgba(138, 99, 0, 0.4);
+            --glow-alert: 0 0 3px rgba(255, 94, 0, 0.6), 0 0 8px rgba(255, 94, 0, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-term); 
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+            font-family: var(--font-term); font-size: 14px;
+            /* Force sharp font rendering */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            /* CRT Scanlines */
+            background-image: linear-gradient(rgba(255, 183, 3, 0.03) 50%, rgba(0, 0, 0, 0.2) 50%);
+            background-size: 100% 4px;
+            /* Faint global glow so body text remains razor sharp */
+            text-shadow: 0 0 1px rgba(255, 183, 3, 0.2);
+            /* Hardware Phosphor Flicker */
+            animation: crt-flicker 0.15s infinite;
+        }
+
+        @keyframes crt-flicker {
+            0% { opacity: 0.95; }
+            50% { opacity: 1; }
+            100% { opacity: 0.98; }
+        }
+
+        .terminal-window {
+            width: 100%; height: 100vh;
+            color: var(--amber-main);
+            display: flex; flex-direction: column;
+            border: 2px solid var(--amber-dim);
+            padding: 4px;
+            box-shadow: 0 0 20px rgba(255, 183, 3, 0.15), inset 0 0 20px rgba(255, 183, 3, 0.1);
+        }
+
+        /* --- TUI HEADER --- */
+        .tui-header {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: var(--amber-main); color: var(--bg-term);
+            font-weight: 800; font-size: 12px; padding: 4px 16px;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px var(--amber-main);
+        }
+
+        /* --- TUI MAIN GRID --- */
+        .tui-main {
+            flex: 1; padding: 8px;
+            display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: auto 1fr; gap: 8px;
+            overflow: hidden;
+        }
+
+        .tui-panel {
+            border: 1px solid var(--amber-dim);
+            display: flex; flex-direction: column;
+            position: relative;
+            padding: 16px;
+            box-shadow: inset 0 0 10px rgba(255, 183, 3, 0.05);
+        }
+        .tui-panel.alert { 
+            border-color: var(--amber-alert); 
+            box-shadow: inset 0 0 30px rgba(255, 94, 0, 0.2), 0 0 10px rgba(255, 94, 0, 0.3);
+        }
+        
+        .tui-panel-title {
+            position: absolute; top: -9px; left: 16px;
+            background-color: var(--bg-term); color: var(--amber-main);
+            padding: 0 8px; font-weight: 700; font-size: 12px;
+            box-shadow: 0 0 8px rgba(255, 183, 3, 0.3);
+            text-shadow: var(--glow-main);
+        }
+        .tui-panel.alert .tui-panel-title { 
+            color: var(--amber-alert); 
+            animation: blink 1s infinite;
+            text-shadow: var(--glow-alert);
+            box-shadow: 0 0 8px rgba(255, 94, 0, 0.4);
+            border: 1px solid var(--amber-alert);
+        }
+
+        .kpi-panel { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;}
+        .kpi-val { font-size: 32px; font-weight: 800; margin-bottom: 4px; text-shadow: var(--glow-main);}
+        .kpi-lbl { font-size: 12px; color: var(--amber-dim); text-transform: uppercase; text-shadow: var(--glow-dim);}
+
+        .tui-table { width: 100%; border-collapse: collapse; font-size: 12px;}
+        .tui-table th { text-align: left; color: var(--amber-dim); font-weight: 400; padding-bottom: 8px; border-bottom: 1px dashed var(--amber-dim); text-shadow: var(--glow-dim); }
+        .tui-table td { padding: 6px 0; }
+
+        .fg-alert { color: var(--amber-alert); text-shadow: var(--glow-alert); }
+        .fg-dim { color: var(--amber-dim); text-shadow: var(--glow-dim); }
+
+        @keyframes blink { 50% { opacity: 0; text-shadow: none; box-shadow: none;} }
+
+        /* --- TUI FOOTER --- */
+        .tui-footer {
+            border-top: 1px solid var(--amber-dim);
+            padding: 8px 16px; display: flex; gap: 24px;
+            font-size: 12px; font-weight: 700; margin-top: 4px;
+            box-shadow: 0 -2px 15px rgba(255, 183, 3, 0.1);
+        }
+        .hotkey { color: var(--bg-term); background: var(--amber-main); padding: 0 6px; margin-right: 4px; text-shadow: none; box-shadow: 0 0 8px var(--amber-main);}
+
+    </style>
+</head>
+<body>
+
+    <div class="terminal-window">
+        <!-- HEADER -->
+        <div class="tui-header">
+            <span>URJA_CLI // TACTICAL_OPS</span>
+            <span class="fg-alert" style="color: var(--bg-term);">[DUST_STORM_ACTIVE]</span>
+            <span>SITE: ALPHA-01 | V1.0.4</span>
+        </div>
+
+        <!-- MAIN GRID -->
+        <div class="tui-main">
+            <!-- Top KPIs -->
+            <div class="tui-panel">
+                <div class="tui-panel-title">YIELD_MONITOR</div>
+                <div class="tui-content kpi-panel">
+                    <div class="kpi-val">18.4 MW</div>
+                    <div class="kpi-lbl">LIVE GENERATION</div>
+                </div>
+            </div>
+
+            <div class="tui-panel alert">
+                <div class="tui-panel-title">WEATHER_SYSTEM</div>
+                <div class="tui-content kpi-panel">
+                    <div class="kpi-val fg-alert">42.8 KM/H</div>
+                    <div class="kpi-lbl fg-alert">WIND SHEAR - CRITICAL</div>
+                </div>
+            </div>
+
+            <div class="tui-panel">
+                <div class="tui-panel-title">SOILING_RATIO</div>
+                <div class="tui-content kpi-panel">
+                    <div class="kpi-val fg-alert">78%</div>
+                    <div class="kpi-lbl">ALBEDO OCCLUSION</div>
+                </div>
+            </div>
+
+            <!-- Bottom Left: Asset Health -->
+            <div class="tui-panel" style="grid-column: span 2;">
+                <div class="tui-panel-title">ASSET_DIAGNOSTICS (3-SIGMA)</div>
+                <div class="tui-content">
+                    <table class="tui-table">
+                        <thead>
+                            <tr>
+                                <th>ASSET_ID</th>
+                                <th>TYPE</th>
+                                <th>HEALTH</th>
+                                <th>TEMP</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>INV-01</td>
+                                <td>INVERTER</td>
+                                <td>98%</td>
+                                <td>42C</td>
+                                <td>NOMINAL</td>
+                            </tr>
+                            <tr>
+                                <td>INV-02</td>
+                                <td>INVERTER</td>
+                                <td class="fg-alert">62%</td>
+                                <td class="fg-alert">61C</td>
+                                <td class="fg-alert">THERMAL_THROTTLE</td>
+                            </tr>
+                            <tr>
+                                <td>MET-01</td>
+                                <td>ANEMOMETER</td>
+                                <td>99%</td>
+                                <td>--</td>
+                                <td>NOMINAL</td>
+                            </tr>
+                            <tr>
+                                <td>ARR-A1</td>
+                                <td>PANEL_ARRAY</td>
+                                <td class="fg-alert">41%</td>
+                                <td>48C</td>
+                                <td class="fg-alert">HEAVY_SOILING</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bottom Right: Worker Queue -->
+            <div class="tui-panel">
+                <div class="tui-panel-title">ARQ_WORKER_TAIL</div>
+                <div class="tui-content" style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+                    <div><span class="fg-dim">[14:05:12]</span> ingest  : DNI dropped 56%</div>
+                    <div><span class="fg-dim">[14:06:01]</span> health  : INV-02 THERMAL ALERT</div>
+                    <div><span class="fg-dim">[14:06:02]</span> dispatch: Issuing curtailment</div>
+                    <div><span class="fg-dim">[14:07:00]</span> weather : STORM GUST 45kmh</div>
+                    <div><span class="fg-dim">[14:08:15]</span> alert   : Initiating safe-mode</div>
+                    <div class="fg-alert">_ awaiting instructions...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="tui-footer">
+            <span><span class="hotkey">Q</span> Quit</span>
+            <span><span class="hotkey">R</span> Force Refresh</span>
+            <span><span class="hotkey">C</span> Manual Curtailment</span>
+            <span><span class="hotkey">S</span> Trigger Wash Cycle</span>
+            <span style="margin-left: auto;" class="fg-dim">[Textual Engine v0.41.0]</span>
+        </div>
+    </div>
+
+</body>
+</html>
