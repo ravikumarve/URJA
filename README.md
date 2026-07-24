@@ -116,33 +116,72 @@ Built with [Textual](https://textual.textualize.io) — runs in your terminal **
 
 ## 🚀 Quick Start
 
+### 🐳 Docker (Production-Ready)
+
 ```bash
 # Clone the repo
 git clone https://github.com/your-org/urja-boilerplate.git
 cd urja-boilerplate
 
-# Start everything (API + DB + Redis + Frontend + Workers)
-docker compose up -d
+# One-command setup
+./scripts/setup.sh
 
-# Run Alembic migrations
+# Or manually:
+docker compose -f docker/docker-compose.yml up -d
 docker compose exec api alembic upgrade head
-
-# Load sample data (50MW solar farm — 432K telemetry rows)
 docker compose exec api python scripts/seed.py
 
 # Open the dashboard
 open http://localhost:3000
-
-# Launch the TUI
-docker compose exec tui python dashboard-tui/app.py
 ```
+
+### 💻 Local Dev (No Docker)
+
+```bash
+# Backend
+source backend/.venv/bin/activate   # Python venv (deps pre-installed)
+uvicorn app.main:app --reload        # → http://localhost:8000/docs
+
+# Frontend (in another terminal)
+cd frontend && npm run dev           # → http://localhost:3000
+
+# TUI Dashboard (in another terminal)
+source backend/.venv/bin/activate
+python dashboard-tui/app.py
+
+# Tests
+pytest -v                            # 124 tests across 7 modules
+pytest --cov=app --cov-report=term-missing   # With coverage
+
+# Migrations (requires DB running)
+alembic upgrade head
+alembic current
+```
+
+### 🎮 TUI Keybindings
+
+| Key | Screen | Description |
+|-----|--------|-------------|
+| `1` | Overview | KPI cards, generation, alerts |
+| `2` | Curtailment | Events, dispatch log |
+| `3` | Carbon | Credit ledger, batches |
+| `4` | Health | Asset scores, active alerts |
+| `r` | — | Refresh data |
+| `q` | — | Quit |
 
 ---
 
 ## 📋 Prerequisites
 
+### Docker Path
 - Docker & Docker Compose v2
-- 4 GB RAM minimum (runs comfortably on a laptop)
+- 4 GB RAM minimum
+
+### Local Dev Path
+- Python 3.12+
+- Node.js 20+
+- PostgreSQL 16 + TimescaleDB
+- Redis 7
 
 ---
 
@@ -200,15 +239,50 @@ This means you see a **fully populated dashboard** from the moment you run `dock
 
 ---
 
+## 🎮 CLI Command Reference
+
+```bash
+# ─── Backend ─────────────────────────────────────────────
+uvicorn app.main:app --reload                    # Dev server (port 8000)
+uvicorn app.main:app --host 0.0.0.0 --port 8000   # Production
+
+# ─── Database ────────────────────────────────────────────
+alembic upgrade head                              # Apply migrations
+alembic downgrade -1                              # Rollback one step
+alembic current                                   # Show current version
+alembic history                                   # List all migrations
+python scripts/seed.py                            # Load 432K demo rows
+
+# ─── Tests ───────────────────────────────────────────────
+pytest -v                                         # 124 tests, 7 modules
+pytest -v -x                                      # Stop on first failure
+pytest --cov=app --cov-report=term-missing        # Coverage report
+pytest tests/test_api/test_auth.py -v             # Single test file
+
+# ─── Workers ─────────────────────────────────────────────
+python -m app.tasks.worker                        # Start ARQ worker
+# Cron schedule: health=15min, weather=6h, pricing=1h, rollup=midnight
+
+# ─── Frontend ────────────────────────────────────────────
+cd frontend && npm run dev                        # Dev server (port 3000)
+cd frontend && npm run build                      # Production build
+cd frontend && npx tsc --noEmit                   # Type check
+
+# ─── TUI Dashboard ───────────────────────────────────────
+python dashboard-tui/app.py                       # Launch terminal UI
+```
+
+---
+
 ## 🗺️ Roadmap
 
 - [x] Idea validated & market research complete
 - [x] **Phase 1: Database schema + API scaffold + Docker setup — DONE**
-- [ ] Phase 2: Dashboard frontend (KPI cards, charts, map)
-- [ ] Phase 3: TUI screens + ML health models + test suite
+- [x] **Phase 2: Dashboard frontend — DONE** (7 pages, Recharts, Leaflet map, RadarCanvas)
+- [x] **Phase 3: TUI screens + test suite — DONE** (124 tests, 90%+ coverage, 4 TUI screens)
 - [ ] Phase 4: Gumroad launch + documentation + marketing
 
-**Phase 1 completed:** 40 API endpoints, 6 ARQ workers, 20 SQLAlchemy models, 1,134-line seed data script, Docker Compose dev+prod.
+**Shipped:** 40 API endpoints · 20 SQLAlchemy models · 6 ARQ workers · 124 pytest tests · 7 dashboard pages · Leaflet asset map · Radar canvas · 4-screen TUI · Alembic migrations · Seed data (432K rows) · Docker Compose · 20 docs.
 
 ---
 
