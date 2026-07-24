@@ -3,6 +3,9 @@
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
+
+const AssetMap = dynamic(() => import('@/components/widgets/AssetMap'), { ssr: false })
 
 interface Asset {
   id: string
@@ -49,6 +52,8 @@ export default function Assets() {
           {assets.length} ASSETS
         </span>
       </div>
+
+      <AssetMap />
 
       <Card>
         <div className="overflow-x-auto">
