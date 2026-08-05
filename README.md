@@ -2,6 +2,12 @@
 
 **Full-stack renewable energy control plane — 40 API endpoints, 6 background workers, 20 database models — ready to deploy.**
 
+<p align="center">
+  <img src="https://img.shields.io/github/stars/ravikumarve/URJA?style=social" />
+  <img src="https://img.shields.io/github/license/ravikumarve/URJA" />
+  <img src="https://img.shields.io/badge/status-active-brightgreen" />
+</p>
+
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000?logo=next.js)](https://nextjs.org)
@@ -220,7 +226,7 @@ This means you see a **fully populated dashboard** from the moment you run `dock
 | **Pro** | **$249** | Everything + TUI dashboard + ML health models + priority support |
 | **Enterprise** | **$499** | White-label license + private repo + 1-hour consulting call |
 
-[Buy on Gumroad →](https://gumroad.com)
+[Buy on Gumroad →](https://gumroad.com/ravikumarve)
 
 ---
 
@@ -298,6 +304,10 @@ This boilerplate is a commercial product. Bug reports and feature requests are w
 - **Enterprise tier:** Full commercial license for white-label resale
 
 See [LICENSE](LICENSE) for details.
+
+## 🛒 Support the Project
+
+Star the repo, share it, or grab the Pro tier: [Buy on Gumroad](https://gumroad.com/ravikumarve)
 
 ---
 
