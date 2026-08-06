@@ -226,7 +226,7 @@ This means you see a **fully populated dashboard** from the moment you run `dock
 | **Pro** | **$249** | Everything + TUI dashboard + ML health models + priority support |
 | **Enterprise** | **$499** | White-label license + private repo + 1-hour consulting call |
 
-[Buy on Gumroad →](https://gumroad.com/ravikumarve)
+[Buy on Gumroad →](https://ravikumarve.gumroad.com)
 
 ---
 
@@ -307,7 +307,7 @@ See [LICENSE](LICENSE) for details.
 
 ## 🛒 Support the Project
 
-Star the repo, share it, or grab the Pro tier: [Buy on Gumroad](https://gumroad.com/ravikumarve)
+Star the repo, share it, or grab the Pro tier: [Buy on Gumroad](https://ravikumarve.gumroad.com)
 
 ---
 
