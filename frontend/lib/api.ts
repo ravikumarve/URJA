@@ -7,6 +7,7 @@ import type {
   DispatchDecision,
   HealthAlert,
   HealthScore,
+  HourlyTelemetry,
   LoginResponse,
   Paginated,
   PaginationMeta,
@@ -185,6 +186,19 @@ export const api = {
   telemetry: {
     latest(): Promise<{ data: TelemetryLatest[] }> {
       return apiFetch('/v1/telemetry/latest')
+    },
+    hourly(
+      assetId: string,
+      startISO: string,
+      endISO?: string,
+    ): Promise<{ data: HourlyTelemetry[]; pagination: PaginationMeta }> {
+      const qs = new URLSearchParams({
+        asset_id: assetId,
+        start_date: startISO,
+        aggregation: 'hourly',
+      })
+      if (endISO) qs.set('end_date', endISO)
+      return apiFetch(`/v1/telemetry?${qs.toString()}`)
     },
   },
 

@@ -40,6 +40,17 @@ export interface TelemetryLatest {
 
 export type AlertSeverity = 'critical' | 'warning' | 'info'
 
+export interface HourlyTelemetry {
+  bucket: string
+  asset_id: string
+  avg_kw: number
+  peak_kw: number
+  min_kw: number
+  energy_kwh: number
+  reading_count: number
+}
+
+
 export interface HealthAlert {
   id: string
   asset_id: string

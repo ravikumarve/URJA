@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card'
 import DuckCurveChart from '@/components/charts/DuckCurveChart'
 import { EmptyState, ErrorPanel, SkeletonPanels, SkeletonRows } from '@/components/widgets/states'
 import { api } from '@/lib/api'
+import { fetchTodayDuckCurve, type DuckPoint } from '@/lib/duck-curve'
 import type { CurtailmentEvent, DispatchDecision, RevenueLost } from '@/lib/types'
 import { useApiData } from '@/lib/use-api-data'
 import { cn } from '@/lib/utils'
@@ -15,6 +16,7 @@ interface YieldData {
   eventTotal: number
   decisions: DispatchDecision[]
   revenue: RevenueLost
+  duckCurve: DuckPoint[]
 }
 
 function fmtTime(iso: string): string {
@@ -24,16 +26,22 @@ function fmtTime(iso: string): string {
 
 export default function Yield() {
   const fetcher = useCallback(async (): Promise<YieldData> => {
-    const [eventsRes, decisionsRes, revenue] = await Promise.all([
+    const [eventsRes, decisionsRes, revenue, assetsRes] = await Promise.all([
       api.dispatch.curtailmentEvents({ per_page: 20 }),
       api.dispatch.decisions({ per_page: 10 }),
       api.dispatch.revenueLost(30),
+      api.assets.list({ page_size: 100 }),
     ])
+    // Duck curve fails soft — chart shows empty state, never kills the page.
+    const duckCurve = await fetchTodayDuckCurve(
+      assetsRes.items.map((a) => a.id),
+    ).catch(() => [])
     return {
       events: eventsRes.data,
       eventTotal: eventsRes.pagination.total,
       decisions: decisionsRes.data,
       revenue,
+      duckCurve,
     }
   }, [])
 
@@ -185,8 +193,8 @@ export default function Yield() {
         </Card>
       </section>
 
-      <Card header="GENERATION — DUCK CURVE WITH PRICE OVERLAY (SAMPLE DATA)">
-        <DuckCurveChart />
+      <Card header="GENERATION CURVE — TODAY (LIVE)">
+        <DuckCurveChart data={state.data.duckCurve} />
       </Card>
     </div>
   )

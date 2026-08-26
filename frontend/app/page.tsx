@@ -7,6 +7,7 @@ import RadarCanvas from '@/components/widgets/RadarCanvas'
 import { Card } from '@/components/ui/card'
 import { AlertTriangle, Thermometer, CloudRain, WifiOff, RefreshCw } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
+import { fetchTodayDuckCurve, type DuckPoint } from '@/lib/duck-curve'
 import type { HealthAlert, PortfolioSummary, TelemetryLatest } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
@@ -19,6 +20,7 @@ interface OverviewData {
   alerts: HealthAlert[]
   alertTotal: number
   portfolio: PortfolioSummary
+  duckCurve: DuckPoint[]
 }
 
 type LoadState =
@@ -63,13 +65,19 @@ export default function Dashboard() {
         api.health.alerts({ status: 'open', per_page: 20 }),
         api.carbon.portfolio(),
       ])
+      const telemetry = telemetryRes.data
+      // Duck curve fails soft — chart shows empty state, never kills the page.
+      const duckCurve = await fetchTodayDuckCurve(
+        telemetry.map((t) => t.asset_id),
+      ).catch(() => [])
       setState({
         phase: 'ready',
         data: {
-          telemetry: telemetryRes.data,
+          telemetry,
           alerts: alertsRes.data,
           alertTotal: alertsRes.pagination.total,
           portfolio,
+          duckCurve,
         },
       })
     } catch (err) {
@@ -194,8 +202,8 @@ export default function Dashboard() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card header="DUCK CURVE — GENERATION VS GRID PRICE" className="lg:col-span-2">
-          <DuckCurveChart />
+        <Card header="GENERATION CURVE — TODAY (LIVE)" className="lg:col-span-2">
+          <DuckCurveChart data={state.data.duckCurve} />
         </Card>
 
         {/* Active alerts — live */}
