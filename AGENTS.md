@@ -8,6 +8,13 @@
 
 ## Session Log
 
+### [2026-08-26] — Frontend Pass Audit: Build ✅ / Integration ❌
+- **State:** Audit complete — build passes, ZERO backend integration found
+- **Build Status:** `npm run build` PASS (Next.js 16.2.11 Turbopack, 9 routes static), `tsc --noEmit` clean. Removed stray empty dirs (app/dashboard/, components/maps/ — untracked by git anyway).
+- **Critical Finding:** Entire frontend is a static mockup. No API client (lib/=utils.ts only), no fetch calls anywhere, all pages hardcoded arrays. Login button = console.log stub. No middleware/auth guard, no token storage, no logout. Backend's 40 endpoints consumed: 0.
+- **Missing for sellable dashboard flow:** (1) lib/api.ts client + NEXT_PUBLIC_API_URL, (2) real auth flow (login→JWT→guard→logout), (3) wire Overview to /telemetry/latest + /health/alerts + /carbon/portfolio, (4) wire yield/carbon/health/assets/settings pages, (5) loading/error/empty states, (6) ESLint setup.
+- **Next Turn Directive:** Sprint — build api client + auth flow first (blocks everything else), then wire Overview page as the reference pattern for remaining 5 pages.
+
 ### [2026-08-26] — Pre-Sale Audit + MIT → Commercial License Conversion
 - **State:** Success — commit 50d1413, working tree clean
 - **Pre-Sale Status:** Backend (40 endpoints, 124 tests), Frontend (7 pages), TUI, Docker, seed data, 20 docs — all complete & pushed. Blockers identified: MIT license (FIXED), no Gumroad assets, no v1.0.0 tag, fresh-install flow unverified.
