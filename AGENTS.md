@@ -8,6 +8,14 @@
 
 ## Session Log
 
+### [2026-08-26] — Frontend Sprint 2: All 5 Module Pages Live ✅
+- **State:** Success — commit f3077e9 (+1,200/−595), build passes, all 5 pages E2E verified in browser. NOTE: session crashed after screenshot; recovery session finished cleanup+commit.
+- **Built:** Extended lib/types.ts (Asset, Site, DispatchDecision, CurtailmentEvent, CarbonCredit, HealthScore, ApiKey, RevenueLost, Paginated<T>) + lib/api.ts (assets.list/sites, dispatch.decisions/curtailmentEvents/revenueLost(30d), carbon.credits, health.scores, settings.apiKeys/users). New shared infra: lib/use-api-data.ts (loading|error|ready hook) + components/widgets/states.tsx (ErrorPanel/Skeletons/EmptyState). AssetMap refactored to accept live geolocated assets + center props. All 5 pages rewritten on Overview pattern.
+- **Verification:** tsc clean, build PASS (9 routes). Browser E2E vs extended mock API (/tmp/opencode/urja_mock_api.py): assets (6 assets/30MW/1 site/map 6 markers) ✅, yield (₹51,030 rev-lost/3 events/decisions log) ✅, carbon (3,450.5 tCO₂e portfolio/5-credit ledger) ✅, health (2 open alerts/6 scores/feed) ✅, settings (API key scope+expiry/2 users roles) ✅.
+- **Contracts locked:** GET /assets+/sites → {items,total,page,page_size}; /dispatch/decisions & /curtailment/events & /carbon/credits → {data,pagination{has_more,total}}; /curtailment/revenue-lost requires start_date (using 30d); /health/scores → {data} DISTINCT ON asset; /auth/api-keys & /auth/users admin-only (403 handled via Promise.allSettled → null = "admin required").
+- **Still mock/decorative:** DuckCurveChart (sample data labeled), RadarCanvas, settings theme/site-info cards (no backend endpoints).
+- **Next Turn Directive:** Wire DuckCurveChart to GET /v1/telemetry time-series (last endpoint consuming mock data). Then Gumroad prep: fresh-clone install flow, tag v1.0.0, listing copy.
+
 ### [2026-08-26] — Frontend Sprint 1: API Client + Auth + Live Overview ✅
 - **State:** Success — commit 0d71c0b, build passes, E2E verified in browser
 - **Built:** lib/api.ts (typed client, Bearer injection, single-flight 401 refresh), lib/auth-context.tsx (AuthProvider), AppShell auth guard + login full-screen mode, TopBar operator/logout, real login page, Overview wired to /telemetry/latest + /health/alerts?status=open + /carbon/portfolio with skeleton/error/retry states. .env.local.example added.
