@@ -1,148 +1,191 @@
 'use client'
 
+import { useCallback } from 'react'
 import KpiCard from '@/components/widgets/KpiCard'
 import { Card } from '@/components/ui/card'
 import DuckCurveChart from '@/components/charts/DuckCurveChart'
+import { EmptyState, ErrorPanel, SkeletonPanels, SkeletonRows } from '@/components/widgets/states'
+import { api } from '@/lib/api'
+import type { CurtailmentEvent, DispatchDecision, RevenueLost } from '@/lib/types'
+import { useApiData } from '@/lib/use-api-data'
 import { cn } from '@/lib/utils'
 
-interface CurtailmentEvent {
-  time: string
-  duration: string
-  curtailed: number
-  price: number
-  revenueLost: number
-  status: 'ACTIVE' | 'RESOLVED' | 'HISTORICAL'
+interface YieldData {
+  events: CurtailmentEvent[]
+  eventTotal: number
+  decisions: DispatchDecision[]
+  revenue: RevenueLost
 }
 
-interface DispatchLog {
-  time: string
-  action: string
-  detail: string
-}
-
-const curtailmentEvents: CurtailmentEvent[] = [
-  { time: '10:32', duration: '18m', curtailed: 4.2, price: 2.8, revenueLost: 11760, status: 'ACTIVE' },
-  { time: '09:15', duration: '42m', curtailed: 9.8, price: 2.6, revenueLost: 25480, status: 'RESOLVED' },
-  { time: '07:48', duration: '12m', curtailed: 2.1, price: 2.4, revenueLost: 5040, status: 'RESOLVED' },
-  { time: '06:00', duration: '8m', curtailed: 1.3, price: 2.3, revenueLost: 2990, status: 'HISTORICAL' },
-  { time: '04:22', duration: '15m', curtailed: 3.6, price: 1.6, revenueLost: 5760, status: 'HISTORICAL' },
-]
-
-const dispatchLogs: DispatchLog[] = [
-  { time: '10:33:01', action: 'RECALL_BATTERY', detail: 'BAT-01 dispatched to curtailment gap — 4.2 MW' },
-  { time: '10:32:44', action: 'CURTAILMENT', detail: 'Grid request: reduce injection by 4.2 MW' },
-  { time: '09:57:12', action: 'RECALL_BATTERY', detail: 'BAT-01 returning to standby — SOC 84%' },
-  { time: '09:15:23', action: 'CURTAILMENT', detail: 'Grid request: reduce injection by 9.8 MW' },
-  { time: '09:15:00', action: 'DISPATCH_BATTERY', detail: 'BAT-01 dispatched — SOC 72% → absorbing 9.8 MW' },
-  { time: '08:30:11', action: 'PRICE_SIGNAL', detail: 'Grid price dropped to ₹2.4/kWh — reducing injection' },
-]
-
-const statusRowColors: Record<string, string> = {
-  ACTIVE: 'bg-tactical-red/10 border-l-tactical-red',
-  RESOLVED: 'bg-tactical-amber/5 border-l-tactical-amber',
-  HISTORICAL: 'opacity-50 border-l-transparent',
+function fmtTime(iso: string): string {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString([], { hour12: false })
 }
 
 export default function Yield() {
+  const fetcher = useCallback(async (): Promise<YieldData> => {
+    const [eventsRes, decisionsRes, revenue] = await Promise.all([
+      api.dispatch.curtailmentEvents({ per_page: 20 }),
+      api.dispatch.decisions({ per_page: 10 }),
+      api.dispatch.revenueLost(30),
+    ])
+    return {
+      events: eventsRes.data,
+      eventTotal: eventsRes.pagination.total,
+      decisions: decisionsRes.data,
+      revenue,
+    }
+  }, [])
+
+  const { state, reload } = useApiData(fetcher)
+
+  if (state.phase === 'loading') {
+    return (
+      <div className="flex flex-col gap-4">
+        <SkeletonPanels />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="panel h-[300px] animate-pulse opacity-40" />
+          <div className="panel h-[300px] animate-pulse opacity-40" />
+        </div>
+      </div>
+    )
+  }
+
+  if (state.phase === 'error') {
+    return <ErrorPanel message={state.message} onRetry={reload} />
+  }
+
+  const { events, eventTotal, decisions, revenue } = state.data
+
   return (
     <div className="flex flex-col gap-4">
       <h1 className="font-ui text-lg font-bold uppercase tracking-wider text-sand-bright">
         YIELD DISPATCH
       </h1>
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiCard
           title="REVENUE_LOST"
-          label="REVENUE LOST TODAY"
-          value="₹51,030"
+          label="LAST 30 DAYS"
+          value={`₹${Math.round(revenue.total_revenue).toLocaleString()}`}
           trend="down"
-          alert
+          alert={revenue.total_revenue > 0}
         />
         <KpiCard
           title="CURTAILMENT"
-          label="CURTAILMENT EVENTS"
-          value="5"
+          label={`EVENTS / ${revenue.event_count} IN 30D`}
+          value={String(eventTotal)}
           trend="neutral"
         />
         <KpiCard
-          title="BATTERY_SOC"
-          label="BATTERY SOC"
-          value="84"
-          unit="%"
-          trend="up"
+          title="CURTAILED"
+          label="ENERGY CURTAILED 30D"
+          value={(revenue.total_curtailed / 1000).toFixed(1)}
+          unit="MWh"
+          trend="neutral"
         />
         <KpiCard
-          title="GRID_PRICE"
-          label="GRID PRICE"
-          value="₹2.8"
+          title="AVG_PRICE"
+          label="AVG CURTAILMENT PRICE"
+          value={`₹${revenue.avg_price.toFixed(2)}`}
           unit="/kWh"
-          trend="up"
+          trend="neutral"
         />
       </section>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card header="CURTAILMENT EVENTS">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Duration</th>
-                <th>Curtailed (MWh)</th>
-                <th>Price</th>
-                <th>Revenue Lost</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {curtailmentEvents.map((evt, i) => (
-                <tr key={i} className={cn('border-l-2', statusRowColors[evt.status])}>
-                  <td className="text-tactical-amber">{evt.time}</td>
-                  <td className="text-sand-bright">{evt.duration}</td>
-                  <td className="text-sand-bright">{evt.curtailed.toFixed(1)}</td>
-                  <td className="text-sand-muted">₹{evt.price.toFixed(1)}</td>
-                  <td className="text-tactical-red">₹{evt.revenueLost.toLocaleString()}</td>
-                  <td>
-                    <span className={cn(
-                      'font-bold text-xs',
-                      evt.status === 'ACTIVE' && 'text-tactical-red',
-                      evt.status === 'RESOLVED' && 'text-tactical-amber',
-                      evt.status === 'HISTORICAL' && 'text-sand-muted',
-                    )}>
-                      {evt.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <Card header={`CURTAILMENT EVENTS (${eventTotal})`}>
+          {events.length === 0 ? (
+            <EmptyState label="NO CURTAILMENT EVENTS RECORDED" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Asset</th>
+                    <th>Duration</th>
+                    <th>Curtailed (kWh)</th>
+                    <th>Price</th>
+                    <th>Revenue Lost</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map((evt) => (
+                    <tr
+                      key={evt.event_id}
+                      className={cn(
+                        'border-l-2',
+                        !evt.is_resolved
+                          ? 'border-l-tactical-red bg-tactical-red/10'
+                          : 'border-l-transparent opacity-60',
+                      )}
+                    >
+                      <td className="text-tactical-amber">{fmtTime(evt.ts)}</td>
+                      <td className="text-sand-muted">{evt.asset_name}</td>
+                      <td className="text-sand-bright">{evt.duration_minutes}m</td>
+                      <td className="text-sand-bright">{evt.curtailed_kwh.toLocaleString()}</td>
+                      <td className="text-sand-muted">₹{evt.price_per_kwh.toFixed(2)}</td>
+                      <td className="text-tactical-red">
+                        ₹{Math.round(evt.revenue_lost).toLocaleString()}
+                      </td>
+                      <td>
+                        <span
+                          className={cn(
+                            'font-bold text-xs',
+                            evt.is_resolved ? 'text-sand-muted' : 'text-tactical-red',
+                          )}
+                        >
+                          {evt.is_resolved ? 'RESOLVED' : 'ACTIVE'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
 
         <Card header="DISPATCH DECISIONS LOG">
-          <div className="flex flex-col gap-1.5">
-            {dispatchLogs.map((log, i) => (
-              <div key={i} className="border-b border-surface-light pb-1.5 last:border-0 last:pb-0">
-                <div className="font-data flex items-baseline gap-2 text-[0.65rem] text-sand-muted">
-                  <span className="text-tactical-amber">{log.time}</span>
+          {decisions.length === 0 ? (
+            <EmptyState label="NO DISPATCH DECISIONS EXECUTED" />
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {decisions.map((d) => (
+                <div
+                  key={d.id}
+                  className="border-b border-surface-light pb-1.5 last:border-0 last:pb-0"
+                >
+                  <div className="font-data flex items-baseline gap-2 text-[0.65rem] text-sand-muted">
+                    <span className="text-tactical-amber">{fmtTime(d.created_at)}</span>
+                    <span>{d.rule_name ?? 'MANUAL'}</span>
+                    <span>· {d.asset_name ?? '—'}</span>
+                  </div>
+                  <div className="font-data mt-0.5 flex items-baseline gap-2 text-xs">
+                    <span
+                      className={cn(
+                        'font-bold uppercase',
+                        d.status === 'executed' && 'text-tactical-green',
+                        d.status === 'failed' && 'text-tactical-red',
+                        d.status !== 'executed' && d.status !== 'failed' && 'text-tactical-orange',
+                      )}
+                    >
+                      [{d.action_taken}]
+                    </span>
+                    <span className="text-sand-bright">
+                      {d.actual_outcome ?? d.expected_outcome ?? d.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="font-data mt-0.5 flex items-baseline gap-2 text-xs">
-                  <span className={cn(
-                    'font-bold',
-                    log.action.includes('CURTAIL') && 'text-tactical-red',
-                    log.action.includes('DISPATCH') && 'text-tactical-green',
-                    log.action.includes('RECALL') && 'text-tactical-amber',
-                    log.action.includes('PRICE') && 'text-tactical-orange',
-                  )}>
-                    [{log.action}]
-                  </span>
-                  <span className="text-sand-bright">{log.detail}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
       </section>
 
-      <Card header="GENERATION — DUCK CURVE WITH PRICE OVERLAY">
+      <Card header="GENERATION — DUCK CURVE WITH PRICE OVERLAY (SAMPLE DATA)">
         <DuckCurveChart />
       </Card>
     </div>

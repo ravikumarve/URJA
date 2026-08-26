@@ -1,35 +1,55 @@
 'use client'
 
+import { useCallback } from 'react'
 import KpiCard from '@/components/widgets/KpiCard'
 import { Card } from '@/components/ui/card'
+import { EmptyState, ErrorPanel, SkeletonPanels, SkeletonRows } from '@/components/widgets/states'
+import { api } from '@/lib/api'
+import type { CarbonCredit, PortfolioSummary } from '@/lib/types'
+import { useApiData } from '@/lib/use-api-data'
 import { cn } from '@/lib/utils'
 
-interface CreditBatch {
-  id: string
-  date: string
-  co2e: number
-  credits: number
-  status: 'active' | 'pending'
+interface CarbonData {
+  portfolio: PortfolioSummary
+  credits: CarbonCredit[]
+  creditTotal: number
 }
 
-const creditBatches: CreditBatch[] = [
-  { id: 'VCS-2026-001', date: '2026-06-01', co2e: 1250, credits: 1250, status: 'active' },
-  { id: 'VCS-2026-002', date: '2026-05-01', co2e: 1180, credits: 1180, status: 'active' },
-  { id: 'VCS-2026-003', date: '2026-04-01', co2e: 1020, credits: 1020, status: 'active' },
-  { id: 'VCS-2026-004', date: '2026-03-01', co2e: 980, credits: 980, status: 'active' },
-  { id: 'VCS-2026-005', date: '2026-02-01', co2e: 870, credits: 870, status: 'active' },
-  { id: 'VCS-2026-006', date: '2026-07-01', co2e: 1100, credits: 0, status: 'pending' },
-]
+function fmtDate(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '—' : d.toISOString().split('T')[0]
+}
 
 export default function Carbon() {
-  const totalIssued = creditBatches
-    .filter((b) => b.status === 'active')
-    .reduce((s, b) => s + b.co2e, 0)
-  const totalPending = creditBatches
-    .filter((b) => b.status === 'pending')
-    .reduce((s, b) => s + b.co2e, 0)
-  const totalRetired = 3200
-  const totalAvailable = totalIssued - totalRetired
+  const fetcher = useCallback(async (): Promise<CarbonData> => {
+    const [portfolio, creditsRes] = await Promise.all([
+      api.carbon.portfolio(),
+      api.carbon.credits({ per_page: 50 }),
+    ])
+    return {
+      portfolio,
+      credits: creditsRes.data,
+      creditTotal: creditsRes.pagination.total,
+    }
+  }, [])
+
+  const { state, reload } = useApiData(fetcher)
+
+  if (state.phase === 'loading') {
+    return (
+      <div className="flex flex-col gap-4">
+        <SkeletonPanels />
+        <div className="panel h-[320px] animate-pulse opacity-40" />
+      </div>
+    )
+  }
+
+  if (state.phase === 'error') {
+    return <ErrorPanel message={state.message} onRetry={reload} />
+  }
+
+  const { portfolio, credits, creditTotal } = state.data
 
   return (
     <div className="flex flex-col gap-4">
@@ -37,98 +57,116 @@ export default function Carbon() {
         CARBON VAULT
       </h1>
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard
           title="TOTAL_ISSUED"
-          label="VERIFIED CREDITS (ACTIVE)"
-          value={totalIssued.toLocaleString()}
+          label={`${portfolio.total_issued} CREDITS ISSUED`}
+          value={portfolio.total_co2e_issued.toLocaleString()}
           unit="tCO₂e"
           trend="up"
         />
         <KpiCard
           title="PENDING"
-          label="UNVERIFIED (PENDING VERIFICATION)"
-          value={totalPending.toLocaleString()}
-          unit="tCO₂e"
+          label="AWAITING VERIFICATION"
+          value={String(portfolio.by_status['pending'] ?? 0)}
+          unit=""
           trend="neutral"
         />
         <KpiCard
           title="RETIRED"
-          label="CREDITS RETIRED"
-          value={totalRetired.toLocaleString()}
+          label={`${portfolio.total_retired} CREDITS RETIRED`}
+          value={portfolio.total_co2e_retired.toLocaleString()}
           unit="tCO₂e"
           trend="neutral"
         />
         <KpiCard
           title="AVAILABLE"
-          label="CREDITS AVAILABLE"
-          value={totalAvailable.toLocaleString()}
-          unit="tCO₂e"
+          label="ACTIVE / TRANSFERABLE"
+          value={String(portfolio.total_available)}
+          unit=""
           trend="up"
         />
       </section>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card header="CREDIT BATCHES" className="lg:col-span-2">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Batch ID</th>
-                <th>Date</th>
-                <th>CO₂e (tonnes)</th>
-                <th>Credits</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {creditBatches.map((batch) => (
-                <tr key={batch.id}>
-                  <td className="font-bold text-tactical-amber">{batch.id}</td>
-                  <td className="text-sand-muted">{batch.date}</td>
-                  <td className="text-sand-bright">{batch.co2e.toLocaleString()}</td>
-                  <td className="text-sand-bright">{batch.credits.toLocaleString()}</td>
-                  <td>
-                    <span
-                      className={cn(
-                        'font-bold text-xs',
-                        batch.status === 'active' && 'text-tactical-green',
-                        batch.status === 'pending' && 'text-tactical-amber',
-                      )}
-                    >
-                      {batch.status === 'active' ? 'ACTIVE' : 'PENDING'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <Card header={`CREDIT LEDGER (${creditTotal})`} className="lg:col-span-2">
+          {credits.length === 0 ? (
+            <EmptyState label="NO CREDITS ISSUED — RUN THE CARBON_MINT WORKER" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Credit</th>
+                    <th>Batch</th>
+                    <th>Asset</th>
+                    <th>Quantity</th>
+                    <th>Methodology</th>
+                    <th>Issued</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {credits.map((c) => (
+                    <tr key={c.credit_id}>
+                      <td className="font-bold text-tactical-amber">
+                        {c.credit_id.slice(0, 8)}…
+                      </td>
+                      <td className="text-sand-muted">{c.batch_id.slice(0, 8)}…</td>
+                      <td className="text-sand-muted">{c.asset_name ?? '—'}</td>
+                      <td className="text-sand-bright">
+                        {c.quantity.toLocaleString()} {c.unit}
+                      </td>
+                      <td className="text-sand-muted">{c.methodology}</td>
+                      <td className="text-sand-muted">{fmtDate(c.created_at)}</td>
+                      <td>
+                        <span
+                          className={cn(
+                            'font-bold text-xs uppercase',
+                            c.status === 'active' && 'text-tactical-green',
+                            c.status === 'pending' && 'text-tactical-amber',
+                            c.status === 'retired' && 'text-sand-muted',
+                            c.status === 'cancelled' && 'text-tactical-red',
+                          )}
+                        >
+                          {c.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
 
         <Card header="PORTFOLIO SUMMARY">
           <div className="flex flex-col gap-3 font-data text-xs">
+            {Object.entries(portfolio.by_methodology).map(([method, count]) => (
+              <div key={method} className="flex justify-between border-b border-surface-light pb-2">
+                <span className="text-sand-muted">METHODOLOGY</span>
+                <span className="text-sand-bright">
+                  {method} × {count}
+                </span>
+              </div>
+            ))}
             <div className="flex justify-between border-b border-surface-light pb-2">
-              <span className="text-sand-muted">METHODOLOGY</span>
-              <span className="text-sand-bright">VM0004 v2.1</span>
+              <span className="text-sand-muted">LAST ISSUANCE</span>
+              <span className="text-sand-bright">{fmtDate(portfolio.last_issuance)}</span>
             </div>
             <div className="flex justify-between border-b border-surface-light pb-2">
-              <span className="text-sand-muted">REGISTRY</span>
-              <span className="text-sand-bright">Verra VCS</span>
+              <span className="text-sand-muted">NEXT ELIGIBLE</span>
+              <span className="text-sand-bright">{fmtDate(portfolio.next_eligible_date)}</span>
             </div>
             <div className="flex justify-between border-b border-surface-light pb-2">
-              <span className="text-sand-muted">VINTAGE</span>
-              <span className="text-sand-bright">2026</span>
-            </div>
-            <div className="flex justify-between border-b border-surface-light pb-2">
-              <span className="text-sand-muted">PROJECT TYPE</span>
-              <span className="text-sand-bright">Solar PV — Grid Connected</span>
-            </div>
-            <div className="flex justify-between border-b border-surface-light pb-2">
-              <span className="text-sand-muted">VALIDATION BODY</span>
-              <span className="text-sand-bright">SGS United Kingdom</span>
+              <span className="text-sand-muted">CANCELLED</span>
+              <span className="text-sand-muted">{portfolio.total_cancelled}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sand-muted">SDG CONTRIBUTION</span>
-              <span className="text-tactical-green">SDG 7, 13</span>
+              <span className="text-sand-muted">REGISTRY TX</span>
+              <span className="text-tactical-green">
+                {credits.find((c) => c.registry_tx_id)?.registry_tx_id?.slice(0, 12) ?? '—'}
+              </span>
             </div>
           </div>
         </Card>

@@ -1,9 +1,18 @@
 import { API_URL, TOKEN_STORAGE_KEYS } from './config'
 import type {
+  ApiKey,
+  Asset,
+  CarbonCredit,
+  CurtailmentEvent,
+  DispatchDecision,
   HealthAlert,
+  HealthScore,
   LoginResponse,
+  Paginated,
   PaginationMeta,
   PortfolioSummary,
+  RevenueLost,
+  Site,
   TelemetryLatest,
   TokenPair,
   User,
@@ -180,6 +189,9 @@ export const api = {
   },
 
   health: {
+    scores(): Promise<{ data: HealthScore[] }> {
+      return apiFetch('/v1/health/scores')
+    },
     alerts(params: { status?: string; per_page?: number } = {}): Promise<{
       data: HealthAlert[]
       pagination: PaginationMeta
@@ -195,6 +207,71 @@ export const api = {
   carbon: {
     portfolio(): Promise<PortfolioSummary> {
       return apiFetch('/v1/carbon/portfolio')
+    },
+    credits(
+      params: { status?: string; per_page?: number } = {},
+    ): Promise<{ data: CarbonCredit[]; pagination: PaginationMeta }> {
+      const qs = new URLSearchParams()
+      if (params.status) qs.set('status', params.status)
+      if (params.per_page) qs.set('per_page', String(params.per_page))
+      const suffix = qs.toString() ? `?${qs.toString()}` : ''
+      return apiFetch(`/v1/carbon/credits${suffix}`)
+    },
+  },
+
+  assets: {
+    list(params: { page?: number; page_size?: number } = {}): Promise<Paginated<Asset>> {
+      const qs = new URLSearchParams()
+      if (params.page) qs.set('page', String(params.page))
+      if (params.page_size) qs.set('page_size', String(params.page_size))
+      const suffix = qs.toString() ? `?${qs.toString()}` : ''
+      return apiFetch(`/v1/assets${suffix}`)
+    },
+    sites(params: { page_size?: number } = {}): Promise<Paginated<Site>> {
+      const qs = new URLSearchParams()
+      if (params.page_size) qs.set('page_size', String(params.page_size))
+      const suffix = qs.toString() ? `?${qs.toString()}` : ''
+      return apiFetch(`/v1/sites${suffix}`)
+    },
+  },
+
+  dispatch: {
+    decisions(
+      params: { per_page?: number } = {},
+    ): Promise<{ data: DispatchDecision[]; pagination: PaginationMeta }> {
+      const qs = new URLSearchParams()
+      if (params.per_page) qs.set('per_page', String(params.per_page))
+      const suffix = qs.toString() ? `?${qs.toString()}` : ''
+      return apiFetch(`/v1/dispatch/decisions${suffix}`)
+    },
+    curtailmentEvents(
+      params: { per_page?: number } = {},
+    ): Promise<{ data: CurtailmentEvent[]; pagination: PaginationMeta }> {
+      const qs = new URLSearchParams()
+      if (params.per_page) qs.set('per_page', String(params.per_page))
+      const suffix = qs.toString() ? `?${qs.toString()}` : ''
+      return apiFetch(`/v1/curtailment/events${suffix}`)
+    },
+    revenueLost(days = 30): Promise<RevenueLost> {
+      const start = new Date(Date.now() - days * 86_400_000)
+        .toISOString()
+        .split('T')[0]
+      return apiFetch(`/v1/curtailment/revenue-lost?start_date=${start}`)
+    },
+  },
+
+  settings: {
+    apiKeys(): Promise<ApiKey[]> {
+      return apiFetch('/v1/auth/api-keys')
+    },
+    users(params: { page?: number; page_size?: number } = {}): Promise<
+      Paginated<User>
+    > {
+      const qs = new URLSearchParams()
+      if (params.page) qs.set('page', String(params.page))
+      if (params.page_size) qs.set('page_size', String(params.page_size))
+      const suffix = qs.toString() ? `?${qs.toString()}` : ''
+      return apiFetch(`/v1/auth/users${suffix}`)
     },
   },
 }
