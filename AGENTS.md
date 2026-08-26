@@ -8,6 +8,13 @@
 
 ## Session Log
 
+### [2026-08-26] — DuckCurveChart Wired Live ✅ (zero mock data consumers remain)
+- **State:** Success — commit 31aa44b, build passes, both chart instances E2E verified in browser.
+- **Built:** lib/api.ts telemetry.hourly() helper (GET /v1/telemetry?aggregation=hourly — endpoint is SINGLE-ASSET, requires asset_id+start_date); lib/duck-curve.ts fetchTodayDuckCurve() fans out per-asset hourly queries (cap 50 assets, Promise.allSettled, fails soft → empty curve, never kills page) and sums avg_kw per local-hour bucket 00→now; DuckCurveChart now presentational (data prop) with EmptyState.
+- **Architectural Decision:** Removed fabricated expected + grid-price series and the right ₹/kWh axis — no backend pricing endpoint exists (only grid_prices table + refresh_pricing worker). Chart = pure live generation. Overlay returns when a /pricing endpoint ships. Consistent with REVENUE/MARKET KPI precedent.
+- **Verification:** tsc clean, build PASS. Browser E2E vs mock (extended with hourly branch + solar bell): Overview + Yield both render live amber area (hours 00→16, ~22 MW ramp, no price lines). Ports cleaned after.
+- **Next Turn Directive:** Gumroad prep — fresh-clone install flow end-to-end, tag v1.0.0, listing copy. Optional: pricing endpoint (grid_prices table exists) to restore price overlay + REVENUE/MARKET KPIs.
+
 ### [2026-08-26] — Frontend Sprint 2: All 5 Module Pages Live ✅
 - **State:** Success — commit f3077e9 (+1,200/−595), build passes, all 5 pages E2E verified in browser. NOTE: session crashed after screenshot; recovery session finished cleanup+commit.
 - **Built:** Extended lib/types.ts (Asset, Site, DispatchDecision, CurtailmentEvent, CarbonCredit, HealthScore, ApiKey, RevenueLost, Paginated<T>) + lib/api.ts (assets.list/sites, dispatch.decisions/curtailmentEvents/revenueLost(30d), carbon.credits, health.scores, settings.apiKeys/users). New shared infra: lib/use-api-data.ts (loading|error|ready hook) + components/widgets/states.tsx (ErrorPanel/Skeletons/EmptyState). AssetMap refactored to accept live geolocated assets + center props. All 5 pages rewritten on Overview pattern.
