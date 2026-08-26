@@ -8,7 +8,12 @@ import { Card } from '@/components/ui/card'
 import { AlertTriangle, Thermometer, CloudRain, WifiOff, RefreshCw } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
 import { fetchTodayDuckCurve, type DuckPoint } from '@/lib/duck-curve'
-import type { HealthAlert, PortfolioSummary, TelemetryLatest } from '@/lib/types'
+import type {
+  HealthAlert,
+  LatestPrice,
+  PortfolioSummary,
+  TelemetryLatest,
+} from '@/lib/types'
 
 // ---------------------------------------------------------------------------
 // Live data orchestration — reference pattern for all module pages:
@@ -21,6 +26,7 @@ interface OverviewData {
   alertTotal: number
   portfolio: PortfolioSummary
   duckCurve: DuckPoint[]
+  latestPrice: LatestPrice | null
 }
 
 type LoadState =
@@ -60,16 +66,22 @@ export default function Dashboard() {
   const load = useCallback(async () => {
     setState({ phase: 'loading' })
     try {
-      const [telemetryRes, alertsRes, portfolio] = await Promise.all([
+      const [telemetryRes, alertsRes, portfolio, sitesRes] = await Promise.all([
         api.telemetry.latest(),
         api.health.alerts({ status: 'open', per_page: 20 }),
         api.carbon.portfolio(),
+        api.assets.sites({ page_size: 1 }),
       ])
       const telemetry = telemetryRes.data
-      // Duck curve fails soft — chart shows empty state, never kills the page.
+      const siteId = sitesRes.items[0]?.id ?? null
+      // Duck curve + pricing fail soft — chart/KPI degrade, never kill the page.
       const duckCurve = await fetchTodayDuckCurve(
         telemetry.map((t) => t.asset_id),
+        siteId,
       ).catch(() => [])
+      const latestPrice = siteId
+        ? await api.pricing.latest(siteId).catch(() => null)
+        : null
       setState({
         phase: 'ready',
         data: {
@@ -78,6 +90,7 @@ export default function Dashboard() {
           alertTotal: alertsRes.pagination.total,
           portfolio,
           duckCurve,
+          latestPrice,
         },
       })
     } catch (err) {
@@ -128,14 +141,13 @@ export default function Dashboard() {
     )
   }
 
-  const { telemetry, alerts, alertTotal, portfolio } = state.data
+  const { telemetry, alerts, alertTotal, portfolio, latestPrice } = state.data
 
   // Derived KPIs from live telemetry.
   const totalGenKw = telemetry.reduce((sum, t) => sum + (t.generation_kw ?? 0), 0)
   const totalEnergyKwh = telemetry.reduce((sum, t) => sum + (t.energy_kwh ?? 0), 0)
   const genMw = totalGenKw / 1000
   const yieldMwh = totalEnergyKwh / 1000
-  const siteCount = new Set(telemetry.map((t) => t.site_name)).size
   const avgHealth =
     telemetry.length > 0
       ? telemetry.reduce((s, t) => s + (t.health_score ?? 0), 0) / telemetry.length
@@ -144,6 +156,9 @@ export default function Dashboard() {
     (latest, t) => (!latest || t.ts > latest ? t.ts : latest),
     null,
   )
+  // Live revenue-rate estimate: current generation valued at latest grid price.
+  const revenuePerHour =
+    latestPrice && genMw > 0 ? genMw * 1000 * latestPrice.price_per_kwh : null
 
   const kpis = [
     {
@@ -176,11 +191,13 @@ export default function Dashboard() {
       trend: 'up' as const,
     },
     {
-      title: 'SITES',
-      label: 'ACTIVE SITES',
-      value: String(siteCount),
-      unit: '',
-      trend: 'neutral' as const,
+      title: 'REVENUE',
+      label: latestPrice
+        ? `EST @ ₹${latestPrice.price_per_kwh.toFixed(2)}/KWH`
+        : 'AWAITING PRICE FEED',
+      value: revenuePerHour !== null ? Math.round(revenuePerHour).toLocaleString() : '—',
+      unit: revenuePerHour !== null ? '₹/hr' : '',
+      trend: 'up' as const,
     },
     {
       title: 'FLEET HEALTH',

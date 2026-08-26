@@ -35,6 +35,7 @@ export default function Yield() {
     // Duck curve fails soft — chart shows empty state, never kills the page.
     const duckCurve = await fetchTodayDuckCurve(
       assetsRes.items.map((a) => a.id),
+      assetsRes.items[0]?.site_id ?? null,
     ).catch(() => [])
     return {
       events: eventsRes.data,

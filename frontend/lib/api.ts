@@ -7,7 +7,9 @@ import type {
   DispatchDecision,
   HealthAlert,
   HealthScore,
+  HourlyPrice,
   HourlyTelemetry,
+  LatestPrice,
   LoginResponse,
   Paginated,
   PaginationMeta,
@@ -199,6 +201,25 @@ export const api = {
       })
       if (endISO) qs.set('end_date', endISO)
       return apiFetch(`/v1/telemetry?${qs.toString()}`)
+    },
+  },
+
+  pricing: {
+    hourly(
+      siteId: string,
+      startISO: string,
+      endISO?: string,
+    ): Promise<{ data: HourlyPrice[]; pagination: PaginationMeta }> {
+      const qs = new URLSearchParams({
+        site_id: siteId,
+        start_date: startISO,
+        aggregation: 'hourly',
+      })
+      if (endISO) qs.set('end_date', endISO)
+      return apiFetch(`/v1/pricing?${qs.toString()}`)
+    },
+    latest(siteId: string): Promise<LatestPrice> {
+      return apiFetch(`/v1/pricing/latest?site_id=${encodeURIComponent(siteId)}`)
     },
   },
 

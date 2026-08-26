@@ -2,8 +2,9 @@
 
 import {
   Area,
-  AreaChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -16,14 +17,24 @@ interface DuckCurveChartProps {
   data: DuckPoint[]
 }
 
+/**
+ * Live generation curve with optional grid-price overlay.
+ *
+ * NOTE: children must be DIRECT descendants of ComposedChart — Recharts 2.x
+ * does not traverse JSX fragments when collecting axis/series children, and a
+ * fragment-wrapped child list renders an empty surface. Conditionals stay
+ * inline ({hasPrice && ...}) which Recharts handles natively.
+ */
 export default function DuckCurveChart({ data }: DuckCurveChartProps) {
   if (data.length === 0) {
     return <EmptyState label="No telemetry ingested today" />
   }
 
+  const hasPrice = data.some((p) => p.price !== undefined)
+
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="actualFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#ffb703" stopOpacity={0.3} />
@@ -41,6 +52,7 @@ export default function DuckCurveChart({ data }: DuckCurveChartProps) {
         />
 
         <YAxis
+          yAxisId="left"
           tick={{ fill: '#8c7b6b', fontFamily: 'JetBrains Mono', fontSize: 11 }}
           tickLine={false}
           axisLine={{ stroke: '#3a332d' }}
@@ -52,6 +64,23 @@ export default function DuckCurveChart({ data }: DuckCurveChartProps) {
           }}
         />
 
+        {hasPrice && (
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            tick={{ fill: '#ff5e00', fontFamily: 'JetBrains Mono', fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            domain={[0, 'auto']}
+            label={{
+              value: '₹/kWh',
+              angle: 90,
+              position: 'insideRight',
+              style: { fill: '#ff5e00', fontFamily: 'JetBrains Mono', fontSize: 11 },
+            }}
+          />
+        )}
+
         <Tooltip
           contentStyle={{
             background: '#1c1a17',
@@ -62,10 +91,10 @@ export default function DuckCurveChart({ data }: DuckCurveChartProps) {
             color: '#d9cdbd',
           }}
           labelStyle={{ color: '#ffb703', fontWeight: 700 }}
-          formatter={(value) => [`${value} MW`, 'GENERATION']}
         />
 
         <Area
+          yAxisId="left"
           type="monotone"
           dataKey="mw"
           stroke="#ffb703"
@@ -74,7 +103,19 @@ export default function DuckCurveChart({ data }: DuckCurveChartProps) {
           dot={false}
           isAnimationActive={false}
         />
-      </AreaChart>
+
+        {hasPrice && (
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="price"
+            stroke="#ff5e00"
+            strokeWidth={1.5}
+            dot={false}
+            isAnimationActive={false}
+          />
+        )}
+      </ComposedChart>
     </ResponsiveContainer>
   )
 }

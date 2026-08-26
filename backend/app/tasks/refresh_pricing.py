@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def _generate_simulated_price(site: AssetSite, hour: int) -> dict:
-    base_price = 0.08
+    base_price = 3.5  # INR/kWh — Indian wholesale band (₹2–5 typical, peaks higher)
     peak_multiplier = 1.0
     if 8 <= hour <= 18:
         peak_multiplier = random.uniform(1.5, 3.0)
@@ -21,7 +21,7 @@ def _generate_simulated_price(site: AssetSite, hour: int) -> dict:
         peak_multiplier = random.uniform(0.8, 1.2)
     return {
         "price_per_kwh": round(base_price * peak_multiplier, 6),
-        "currency": "USD",
+        "currency": "INR",
         "source": "simulated",
         "market_region": "default",
         "is_forecast": True,

@@ -50,6 +50,27 @@ export interface HourlyTelemetry {
   reading_count: number
 }
 
+export interface HourlyPrice {
+  bucket: string
+  site_id: string
+  avg_price: number
+  min_price: number
+  max_price: number
+  currency: string
+  reading_count: number
+}
+
+export interface LatestPrice {
+  ts: string
+  site_id: string
+  price_per_kwh: number
+  currency: string
+  source: string
+  is_forecast: boolean
+  market_region: string | null
+}
+
+
 
 export interface HealthAlert {
   id: string
