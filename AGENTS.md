@@ -8,6 +8,13 @@
 
 ## Session Log
 
+### [2026-08-26] — Pre-Sale Audit + MIT → Commercial License Conversion
+- **State:** Success — commit 50d1413, working tree clean
+- **Pre-Sale Status:** Backend (40 endpoints, 124 tests), Frontend (7 pages), TUI, Docker, seed data, 20 docs — all complete & pushed. Blockers identified: MIT license (FIXED), no Gumroad assets, no v1.0.0 tag, fresh-install flow unverified.
+- **Architectural Decision:** Pure Commercial License (AETHER precedent — direct-sell only). Tiered grants: Basic/Pro = own-product use, no redistribution; Enterprise ($499) = white-label. Updates via Gumroad re-download only. Zero MIT grant anywhere; sole remaining "MIT" is InfluxDB's license in ADRS comparison table (correct).
+- **Files Changed:** LICENSE (full rewrite), README.md, PRICING.md, PRD.md, CI-CD.md (badge → Commercial)
+- **Next Turn Directive:** Gumroad prep — verify fresh-clone install flow end-to-end, `npm run build` frontend pass, tag v1.0.0, then listing copy.
+
 ### [2026-07-22] — URJA Idea Validation & Boilerplate Pivot
 - **State:** Complete — idea.md upgraded
 - **Validation Method:** Web research (curtailment market, competitive landscape, boilerplate market, carbon MRV tech)
