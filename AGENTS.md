@@ -8,6 +8,14 @@
 
 ## Session Log
 
+### [2026-08-26] — Pricing Sprint: Grid-Price API + Live Price Overlay ✅ (Recharts fragment bug fixed)
+- **State:** Success — commit d5da8a1, tsc clean, build PASS, both chart instances E2E + visually verified. Recovered from session-ses_fc20.md (crashed mid-debug).
+- **Built:** Backend GET /v1/pricing (raw/hourly/daily via time_bucket, org-scoped, PaginationMeta) + GET /v1/pricing/latest (max_age_minutes cutoff → 404 when stale); refresh_pricing worker rebased to INR/kWh Indian wholesale band (was USD 0.08). Frontend: api.pricing.hourly()/latest(), fetchTodayDuckCurve(ids, siteId?) merges hourly avg_price into DuckPoint.price (fails soft → overlay omitted), Overview REVENUE KPI (latest price × fleet MW), Yield passes siteId.
+- **Root Cause (the big one):** Recharts 2.15.4 does NOT traverse JSX fragments when collecting chart children — `{cond ? <ComposedChart>{fragment}</ComposedChart> : <AreaChart>{fragment}</AreaChart>}` rendered a completely EMPTY svg.recharts-surface (no paths, no axis texts, no console errors). Debug chain: curl OK → in-page fetch OK (rows=13) → fetch monkey-patch netlog proved 200+13 rows → React fiber probe proved component received perfect data (18 pts, price present) into minified ComposedChart → isolated to fragment children. **Fix:** single always-on ComposedChart (superset of AreaChart) with DIRECT children, conditionals inline (`{hasPrice && <YAxis/>}`) — the official docs pattern. Comment in DuckCurveChart.tsx documents the trap.
+- **Verification:** 124 backend tests collect clean (DB-dependent execution blocked — Postgres down, environmental). Browser E2E vs mock: Overview + Yield both render area=1 + line=1 + dual Y-axes (MW 0–24 left, ₹/kWh 0–12 right); REVENUE KPI exact (₹8.70 × 16.05 MW = ₹139,635/hr). Screenshot confirms amber area + orange price line visually.
+- **Still mock-only:** MARKET KPI not restored (needs day-ahead price curve endpoint — optional). RadarCanvas decorative.
+- **Next Turn Directive:** Gumroad prep — fresh-clone install flow end-to-end, tag v1.0.0, listing copy. Optional: day-ahead price forecast endpoint to restore MARKET KPI.
+
 ### [2026-08-26] — DuckCurveChart Wired Live ✅ (zero mock data consumers remain)
 - **State:** Success — commit 31aa44b, build passes, both chart instances E2E verified in browser.
 - **Built:** lib/api.ts telemetry.hourly() helper (GET /v1/telemetry?aggregation=hourly — endpoint is SINGLE-ASSET, requires asset_id+start_date); lib/duck-curve.ts fetchTodayDuckCurve() fans out per-asset hourly queries (cap 50 assets, Promise.allSettled, fails soft → empty curve, never kills page) and sums avg_kw per local-hour bucket 00→now; DuckCurveChart now presentational (data prop) with EmptyState.
