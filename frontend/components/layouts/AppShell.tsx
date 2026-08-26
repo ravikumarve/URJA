@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { usePathname } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
+import { useAuth } from '@/lib/auth-context'
 
 const routeTitles: Record<string, string> = {
   '/': 'TACTICAL COMMAND CENTER',
@@ -20,7 +21,18 @@ interface AppShellProps {
 
 export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { status } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const isLoginPage = pathname === '/login'
+
+  // Auth guard — unauthenticated users never see app routes.
+  useEffect(() => {
+    if (!isLoginPage && status === 'unauthenticated') {
+      router.replace('/login')
+    }
+  }, [isLoginPage, status, router])
 
   const pageTitle = useMemo(() => {
     if (pathname === '/') return routeTitles['/']
@@ -29,6 +41,23 @@ export default function AppShell({ children }: AppShellProps) {
     )
     return matched ? matched[1] : 'URJA'
   }, [pathname])
+
+  // Login renders full-screen, outside the command-center chrome.
+  if (isLoginPage) {
+    return (
+      <div className="h-screen overflow-y-auto bg-void">{children}</div>
+    )
+  }
+
+  if (status !== 'authenticated') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-void">
+        <p className="font-data animate-pulse text-xs uppercase tracking-[3px] text-tactical-amber">
+          {status === 'loading' ? '// AUTHENTICATING…' : '// REDIRECTING TO LOGIN…'}
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-void">
