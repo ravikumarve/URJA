@@ -8,6 +8,14 @@
 
 ## Session Log
 
+### [2026-08-26] — Frontend Sprint 1: API Client + Auth + Live Overview ✅
+- **State:** Success — commit 0d71c0b, build passes, E2E verified in browser
+- **Built:** lib/api.ts (typed client, Bearer injection, single-flight 401 refresh), lib/auth-context.tsx (AuthProvider), AppShell auth guard + login full-screen mode, TopBar operator/logout, real login page, Overview wired to /telemetry/latest + /health/alerts?status=open + /carbon/portfolio with skeleton/error/retry states. .env.local.example added.
+- **Verification:** tsc clean, npm run build PASS (9 routes). Browser E2E vs mock API (/tmp/opencode/urja_mock_api.py): guard redirect ✅, bad-creds error banner ✅, API-down message ✅, login→live KPIs (16.1MW/2 alerts/3450.5 tCO₂e all correct) ✅, logout→login ✅.
+- **Contracts locked:** POST /v1/auth/login {email,password}→{user,tokens,expires_in:900}; Bearer via HTTPBearer; CORS allows :3000; alerts support ?status=&per_page=; portfolio returns totals+by_status+by_methodology.
+- **Still mock:** DuckCurveChart (needs GET /v1/telemetry time-series wiring), RadarCanvas (decorative), REVENUE/MARKET KPIs dropped for SITES/FLEET HEALTH until pricing endpoint wired.
+- **Next Turn Directive:** Wire remaining 5 pages using Overview pattern — assets (/assets+/sites), yield (/dispatch/decisions), carbon (/carbon/credits), health (/health/scores+alerts full list), settings (/auth/api-keys, /users). Then DuckCurve time-series.
+
 ### [2026-08-26] — Frontend Pass Audit: Build ✅ / Integration ❌
 - **State:** Audit complete — build passes, ZERO backend integration found
 - **Build Status:** `npm run build` PASS (Next.js 16.2.11 Turbopack, 9 routes static), `tsc --noEmit` clean. Removed stray empty dirs (app/dashboard/, components/maps/ — untracked by git anyway).
