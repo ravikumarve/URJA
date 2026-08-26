@@ -300,10 +300,12 @@ This boilerplate is a commercial product. Bug reports and feature requests are w
 
 ## 📄 License
 
-- **Basic & Pro tiers:** MIT License with commercial use restrictions
-- **Enterprise tier:** Full commercial license for white-label resale
+URJA is sold under a **Commercial License** — not open source.
 
-See [LICENSE](LICENSE) for details.
+- **Basic & Pro tiers:** Use, modify, and deploy for your own products. No redistribution or resale of the source.
+- **Enterprise tier:** Full white-label rights — rebrand and deliver to your clients.
+
+See [LICENSE](LICENSE) for full terms.
 
 ## 🛒 Support the Project
 

@@ -229,7 +229,7 @@ When a buyer purchases URJA on Gumroad at $149–$499, they receive:
 1. **A private GitHub repository** (or zip download) containing the complete codebase — approximately 40,000–60,000 lines of well-structured Python, TypeScript, and SQL across ~300 files
 2. **Sample data** for a 50MW solar farm with 12 months of 15-minute interval telemetry, curtailment events, carbon credit issuances, and maintenance logs — a fully populated dashboard on `docker compose up`
 3. **Documentation suite**: ARCHITECTURE.md, API.md (auto-generated from OpenAPI), DATABASE.md, DEPLOYMENT.md, and a step-by-step tutorial
-4. **Commercial license**: MIT + commercial addendum for Basic/Pro; full white-label license for Enterprise
+4. **Commercial license**: restricted commercial license for Basic/Pro (own-product use, no redistribution); full white-label license for Enterprise
 
 ### Key UX Flows
 

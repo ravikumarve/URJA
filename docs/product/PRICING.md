@@ -50,7 +50,7 @@ URJA is a **boilerplate**, not a SaaS platform. This distinction shapes every pr
 | **Carbon MRV** | Digital credit pipeline with IPMVP methodology, audit trail, ESG export |
 | **Dispatch** | Curtailment-aware dispatch optimization rules engine |
 | **Documentation** | ARCHITECTURE.md, API.md, DATABASE.md, DEPLOYMENT.md |
-| **License** | MIT + commercial use (no white-label resale) |
+| **License** | Commercial license — own-product use, no redistribution/resale |
 | **Updates** | Access to all v1.x releases |
 
 **Target buyer**: Developers entering energy, clean energy consultants, farm operators.

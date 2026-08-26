@@ -994,7 +994,7 @@ Add these badges to `README.md` above the fold:
     <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/ravikumarve/coverage-badge/raw/urja-coverage.json" alt="Coverage">
   </a>
   <a href="https://github.com/ravikumarve/URJA/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+    <img src="https://img.shields.io/badge/license-Commercial-red.svg" alt="License">
   </a>
   <a href="https://github.com/ravikumarve/URJA">
     <img src="https://img.shields.io/github/v/release/ravikumarve/URJA?include_prereleases&sort=semver" alt="Version">
@@ -1009,7 +1009,7 @@ Add these badges to `README.md` above the fold:
 | CI | `https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg` | Shows last CI run status |
 | Release | `https://github.com/OWNER/REPO/actions/workflows/release.yml/badge.svg` | Shows last release status |
 | Coverage | Custom endpoint (see below) | Requires Shields.io or coverage service |
-| License | `https://img.shields.io/badge/license-MIT-blue.svg` | Static |
+| License | `https://img.shields.io/badge/license-Commercial-red.svg` | Static |
 | Version | `https://img.shields.io/github/v/release/OWNER/REPO` | Auto-updates from tags |
 
 **Coverage badge** requires a Shields.io endpoint. Two options:
