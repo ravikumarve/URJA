@@ -23,6 +23,12 @@
 
 > **Not a SaaS. A boilerplate you own.**
 
+<p align="center">
+  <img src="docs/images/urja-tui-demo.gif" alt="URJA TUI Demo — 4 screens cycling @145×36 amber CRT" width="960" />
+  <br>
+  <em>TUI Demo — Overview → Curtailment → Carbon → Health (live polling, keyboard 1/2/3/4, amber CRT @ 145×36)</em>
+</p>
+
 ---
 
 ## 📦 What You Get
