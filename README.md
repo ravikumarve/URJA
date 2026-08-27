@@ -29,6 +29,12 @@
   <em>TUI Demo — Overview → Curtailment → Carbon → Health (live polling, keyboard 1/2/3/4, amber CRT @ 145×36)</em>
 </p>
 
+<p align="center">
+  <img src="docs/images/urja-web-demo.gif" alt="URJA Web Demo — 4 pages cycling" width="960" />
+  <br>
+  <em>Web Demo — Overview → Assets (map) → Yield → Health (Tactical Command Center, 960×433, 0.7 fps)</em>
+</p>
+
 ---
 
 ## 📦 What You Get
