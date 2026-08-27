@@ -12,6 +12,7 @@ redis==5.*
 arq==0.*
 httpx==0.*
 python-dotenv==1.*
+scikit-learn
 
 # Testing
 pytest==8.*
