@@ -61,8 +61,20 @@ class OverviewScreen(Screen):
 
     def _update_kpis(self, telemetry: dict) -> None:
         self.query_one("#kpi-mw", KpiCard).value = f"{telemetry['current_mw']} MW"
-        self.query_one("#kpi-wind", KpiCard).value = f"{telemetry['wind_speed']} KM/H"
-        self.query_one("#kpi-soil", KpiCard).value = f"{telemetry['soiling_ratio']}%"
+        wind_card = self.query_one("#kpi-wind", KpiCard)
+        wind_card.value = f"{telemetry['wind_speed']} KM/H"
+        if telemetry.get("wind_speed", 0) > 40:
+            wind_card.add_class("alert")
+            wind_card.label = "WIND SHEAR - CRITICAL"
+        else:
+            wind_card.remove_class("alert")
+            wind_card.label = "WIND SPEED"
+        soil_card = self.query_one("#kpi-soil", KpiCard)
+        soil_card.value = f"{telemetry['soiling_ratio']}%"
+        if telemetry.get("soiling_ratio", 0) >= 75:
+            soil_card.add_class("alert")
+        else:
+            soil_card.remove_class("alert")
 
         rev = telemetry.get("revenue_lost", 263480)
         self.query_one("#kpi-rev", KpiCard).value = f"₹{rev:,}"

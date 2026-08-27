@@ -86,14 +86,18 @@ KpiCard > Static.label {
     content-align: center middle;
     color: #8a6300;
     height: 1;
+    text-style: none;
 }
 KpiCard.alert {
     border: solid #ff5e00;
 }
+KpiCard.alert > Label.title {
+    color: #ff5e00;
+}
 KpiCard.alert > Static.value {
     color: #ff5e00;
 }
-KpiCard.alert > Label.title {
+KpiCard.alert > Static.label {
     color: #ff5e00;
 }
 
