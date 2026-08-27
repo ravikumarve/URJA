@@ -121,8 +121,8 @@ KpiCard.alert > Label.title {
 DataTable {
     border: solid #8a6300;
     margin: 0 0 1 0;
-    height: auto;
-    min-height: 5;
+    height: 1fr;
+    min-height: 8;
 }
 DataTable > .datatable--header {
     color: #8a6300;
@@ -139,9 +139,10 @@ DataTable > .datatable--hover {
 /* ── RICH LOG ── */
 RichLog {
     border: solid #8a6300;
-    margin: 0 0 1 0;
+    margin: 0 0 0 0;
     padding: 0 1;
-    min-height: 6;
+    height: 12;
+    min-height: 8;
 }
 
 /* ── ALERT TEXT ── */
@@ -201,12 +202,31 @@ Vertical {
 /* ── WORKER LOG ── */
 #worker-log {
     height: 10;
+    margin: 0 0 1 0;
 }
 #dispatch-log {
-    height: 6;
+    height: 10;
+    margin: 0 0 1 0;
 }
 #alerts-panel {
-    height: 6;
+    height: 12;
     border: solid #ff5e00;
     margin: 0 0 1 0;
+}
+/* Per-screen table heights — fill remaining space */
+#asset-table {
+    height: 1fr;
+    min-height: 12;
+}
+#curtailment-table {
+    height: 1fr;
+    min-height: 10;
+}
+#carbon-table {
+    height: 1fr;
+    min-height: 10;
+}
+#health-table {
+    height: 1fr;
+    min-height: 12;
 }

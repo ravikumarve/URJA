@@ -116,9 +116,11 @@
   .kpi-value {
     font-family: var(--font-data);
     font-weight: 800;
-    font-size: 2.2rem;
+    font-size: clamp(1.45rem, 1.45vw, 1.85rem);
     line-height: 1;
     color: var(--color-sand-bright);
+    white-space: nowrap;
+    letter-spacing: -0.02em;
   }
 
   .text-alert {

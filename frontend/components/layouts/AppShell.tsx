@@ -72,7 +72,7 @@ export default function AppShell({ children }: AppShellProps) {
           onMenuToggle={() => setSidebarOpen((prev) => !prev)}
         />
 
-        <main className="flex-1 overflow-y-auto bg-void p-4">
+        <main className="flex-1 overflow-y-auto bg-void p-4 pb-8 scroll-pt-4">
           {children}
         </main>
       </div>

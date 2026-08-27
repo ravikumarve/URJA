@@ -51,7 +51,10 @@ export default function AssetMap({
           zoomControl={false}
           attributionControl={false}
         >
-          <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          />
           {assets.map((asset) => (
             <CircleMarker
               key={asset.id}
@@ -129,6 +132,10 @@ export default function AssetMap({
         .leaflet-container {
           background: #090807 !important;
           font-family: 'Chakra Petch', sans-serif !important;
+          filter: invert(92%) hue-rotate(180deg) brightness(0.85) contrast(1.1);
+        }
+        .leaflet-tile-pane {
+          filter: invert(0);
         }
       `}</style>
     </div>

@@ -37,13 +37,13 @@ export default function KpiCard({
   const TrendIcon = trend ? trendIcons[trend] : null
 
   return (
-    <div
-      className={cn(
-        'panel relative flex flex-col justify-between p-4',
-        alert && 'animate-pulse-glow border-tactical-orange',
-        className,
-      )}
-    >
+      <div
+        className={cn(
+          'panel relative flex min-w-0 flex-col justify-between p-3 xl:p-4',
+          alert && 'animate-pulse-glow border-tactical-orange',
+          className,
+        )}
+      >
       <span
         className={cn(
           'font-data absolute -top-2.5 left-3 z-10 bg-surface-dark px-2 text-[0.65rem] font-bold uppercase tracking-widest',
@@ -59,10 +59,12 @@ export default function KpiCard({
         </span>
       </div>
 
-      <div className="mt-1 flex items-baseline gap-1.5">
-        <span className="kpi-value text-tactical-amber">{value}</span>
+      <div className="mt-1 flex flex-wrap items-baseline gap-x-1 gap-y-0">
+        <span className="kpi-value text-tactical-amber" title={`${value} ${unit ?? ''}`.trim()}>
+          {value}
+        </span>
         {unit && (
-          <span className="font-data text-sm font-bold text-tactical-amber">
+          <span className="font-data text-[0.7rem] font-bold leading-none text-tactical-amber">
             {unit}
           </span>
         )}

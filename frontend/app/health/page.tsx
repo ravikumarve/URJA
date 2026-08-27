@@ -73,7 +73,7 @@ export default function Health() {
       : 0
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-6">
       <h1 className="font-ui text-lg font-bold uppercase tracking-wider text-sand-bright">
         ASSET HEALTH
       </h1>
@@ -214,7 +214,7 @@ export default function Health() {
         </Card>
       </div>
 
-      <Card header="ALERT FEED — MOST RECENT FIRST">
+      <Card header="ALERT FEED — MOST RECENT FIRST" className="mb-2">
         {alerts.length === 0 ? (
           <EmptyState label="FEED EMPTY" />
         ) : (
