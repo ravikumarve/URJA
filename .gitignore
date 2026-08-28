@@ -36,5 +36,6 @@ idea.md
 
 # ML models (Colab burst — not committed, inference-only on Latitude)
 *.pkl
+*.pt
 *.onnx
 health_meta.json

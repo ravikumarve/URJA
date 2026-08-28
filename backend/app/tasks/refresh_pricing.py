@@ -1,6 +1,8 @@
 import logging
+import pickle
 import random
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlalchemy import select, insert
 
@@ -8,6 +10,84 @@ from app.models.asset import AssetSite
 from app.models.telemetry import GridPrice
 
 logger = logging.getLogger(__name__)
+
+# Colab LSTM — burst-trained price_forecast.pt + scaler.pkl, inference on Latitude
+_FORECAST_MODEL_PATH = Path(__file__).with_name("price_forecast.pt")
+_SCALER_PATH = Path(__file__).with_name("scaler.pkl")
+# also check services folder (where Colab tells to mv)
+_ALT_MODEL = Path(__file__).parent.parent / "services" / "price_forecast.pt"
+_ALT_SCALER = Path(__file__).parent.parent / "services" / "scaler.pkl"
+_FORECAST_MODEL = None
+_SCALER = None
+
+
+def _load_forecast():
+    global _FORECAST_MODEL, _SCALER
+    if _FORECAST_MODEL is not None and _SCALER is not None:
+        return _FORECAST_MODEL, _SCALER
+    # find files in either location
+    m_path = _FORECAST_MODEL_PATH if _FORECAST_MODEL_PATH.exists() else _ALT_MODEL
+    s_path = _SCALER_PATH if _SCALER_PATH.exists() else _ALT_SCALER
+    if not m_path.exists() or not s_path.exists():
+        return None, None
+    try:
+        import torch
+        import torch.nn as nn
+
+        class LSTM(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.lstm = nn.LSTM(3, 32, batch_first=True)
+                self.fc = nn.Linear(32, 24)
+
+            def forward(self, x):
+                _, (h, _) = self.lstm(x)
+                return self.fc(h[-1])
+
+        _SCALER = pickle.loads(s_path.read_bytes())
+        _FORECAST_MODEL = LSTM()
+        _FORECAST_MODEL.load_state_dict(__import__("torch").load(str(m_path), map_location="cpu"))
+        _FORECAST_MODEL.eval()
+        logger.info("Loaded price_forecast.pt + scaler.pkl (%.1f KB)", m_path.stat().st_size / 1024)
+    except Exception as e:
+        logger.warning("Forecast model load failed (%s) — fallback to sin mock: %s", m_path, e)
+        _FORECAST_MODEL, _SCALER = None, None
+    return _FORECAST_MODEL, _SCALER
+
+
+def _forecast_price_lstm(hour: int, dow: int) -> float | None:
+    """Try LSTM 24h forecast, return price for current hour. None on any failure."""
+    try:
+        model, scaler = _load_forecast()
+        if model is None or scaler is None:
+            return None
+        import numpy as np
+        import torch
+
+        # Build dummy 24h history using sin mock (or could query DB last 24)
+        # history hour/dow/price for last 24
+        hist = []
+        now = datetime.now(timezone.utc)
+        for i in range(24):
+            h = (hour - 24 + i) % 24
+            d = dow
+            # use sin mock as history price
+            base = 3.5 * (0.5 + 2.0 * max(0.0, __import__("math").sin((h - 6) * 3.14159 / 13)) if 6 <= h <= 19 else 0.5)
+            price = round(base, 2)
+            hist.append([price, h, d])
+        scaled = scaler.transform(np.array(hist, dtype=float))
+        X = torch.tensor(scaled, dtype=torch.float32).unsqueeze(0)  # [1,24,3]
+        with torch.no_grad():
+            pred_scaled = model(X).numpy()[0]  # 24 values
+        # inverse: need price column
+        dummy = np.zeros((24, 3))
+        dummy[:, 0] = pred_scaled
+        pred_inv = scaler.inverse_transform(dummy)[:, 0]
+        # first predicted hour corresponds to 'hour'
+        return float(round(pred_inv[0], 2))
+    except Exception as e:
+        logger.debug("LSTM forecast failed, fallback: %s", e)
+        return None
 
 
 def _generate_simulated_price(site: AssetSite, hour: int) -> dict:
@@ -42,7 +122,18 @@ async def refresh_grid_pricing(ctx) -> dict:
 
             for site in sites:
                 try:
-                    price = _generate_simulated_price(site, now.hour)
+                    # Try LSTM first (if price_forecast.pt + scaler.pkl pasted from Colab)
+                    lstm_price = _forecast_price_lstm(now.hour, now.weekday())
+                    if lstm_price is not None:
+                        price = {
+                            "price_per_kwh": lstm_price,
+                            "currency": "INR",
+                            "source": "lstm_forecast",
+                            "market_region": "default",
+                            "is_forecast": True,
+                        }
+                    else:
+                        price = _generate_simulated_price(site, now.hour)
                     stmt = insert(GridPrice).values(
                         ts=now,
                         site_id=site.id,
