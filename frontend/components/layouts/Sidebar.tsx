@@ -97,7 +97,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         <div className="border-t-2 border-border-hard px-5 py-3 font-data text-xs text-sand-muted">
-          v1.0.4
+          v1.0.0
         </div>
       </aside>
     </>
