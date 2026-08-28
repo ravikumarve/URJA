@@ -33,6 +33,7 @@ docker-data/
 
 # Project specific
 idea.md
+urja_*.html
 
 # ML models (Colab burst — not committed, inference-only on Latitude)
 *.pkl
